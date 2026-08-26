@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.core)
     // Compose + Material 3 Expressive
     implementation(platform(libs.compose.bom))
+    implementation(libs.core.splashscreen)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.ui.tooling.preview)
