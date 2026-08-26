@@ -94,7 +94,5 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
                 } }
             }
         }
-    }
-
     if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, onDismiss = { activeApp = null }, onDownload = { asset -> dlVm.enqueue(asset); activeApp = null }, onOpenRepo = { activeApp = null })
 }

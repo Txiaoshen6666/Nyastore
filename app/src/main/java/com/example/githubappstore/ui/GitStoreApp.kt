@@ -45,7 +45,9 @@ fun GitStoreApp() {
     Scaffold(modifier = Modifier, topBar = { CenterAlignedTopAppBar(title = { Text(current.label) }, colors = TopAppBarDefaults.centerAlignedTopAppBarColors()) },
         bottomBar = { NavigationBar {
             items.forEach { tab -> NavigationBarItem(selected = current.key == tab.key, onClick = { current = tab },
-                icon = { Icon(tab.icon, contentDescription = tab.label) }, label = { Text(tab.label) }, colors = NavigationBarItemDefaults.colors())
+                selectedIcon = { Icon(tab.icon, contentDescription = tab.label) },
+                unselectedIcon = { Icon(tab.icon, contentDescription = tab.label) },
+                label = { Text(tab.label) }, colors = NavigationBarItemDefaults.colors())
             }
         } },
         contentWindowInsets = WindowInsets.systemBars

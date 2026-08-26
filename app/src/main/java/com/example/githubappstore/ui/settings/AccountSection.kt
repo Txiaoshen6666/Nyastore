@@ -60,14 +60,34 @@ fun AccountSection(modifier: Modifier = Modifier, vm: AccountViewModel = viewMod
             if (user != null) {
                 Text("我 Star 的 Android 应用", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
                 when (val s = starsState) {
-                    is AccountViewModel.StarsState.Loading -> LoadingPraying()
-                    is AccountViewModel.StarsState.Empty -> Text("你 Star 的仓库中没有检测到 Android/Kotlin 项目。", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    is AccountViewModel.StarsState.Error -> Text(s.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-                    is AccountViewModel.StarsState.Success -> LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 6.dp), modifier = Modifier.fillMaxWidth()) { items(s.items, key = { it.repo.id }) { app -> AppCard(app = app, onClick = { activeApp = app }) } } }
+                    is AccountViewModel.StarsState.Loading -> {
+                        LoadingPraying()
+                    }
+                    is AccountViewModel.StarsState.Empty -> {
+                        Text("你 Star 的仓库中没有检测到 Android/Kotlin 项目。", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    is AccountViewModel.StarsState.Error -> {
+                        Text(s.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                    }
+                    is AccountViewModel.StarsState.Success -> {
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 6.dp), modifier = Modifier.fillMaxWidth()) {
+                            items(s.items, key = { it.repo.id }) { app ->
+                                AppCard(app = app, onClick = { activeApp = app })
+                            }
+                        }
+                    }
                     else -> Unit
                 }
             }
         }
     }
-    if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, onDismiss = { activeApp = null }, onDownload = { asset -> dlVm.enqueue(asset) }, onOpenRepo = { activeApp = null })
+    if (activeApp != null) {
+        InstallBottomSheet(
+            app = activeApp!!,
+            release = release,
+            onDismiss = { activeApp = null },
+            onDownload = { asset -> dlVm.enqueue(asset) },
+            onOpenRepo = { activeApp = null }
+        )
+    }
 }
