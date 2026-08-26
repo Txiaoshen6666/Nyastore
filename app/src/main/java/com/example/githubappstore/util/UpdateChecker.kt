@@ -50,11 +50,7 @@ fun listInstalledGithubApps(context: Context, knownPackages: Map<String, String>
  * are package-authoritative.
  */
 suspend fun effectiveGithubPackages(context: Context): Map<String, String> {
-    val base = LinkedHashMap(KnownGithubAndroidApps.PACKAGE_TO_REPO)
-    runCatching { FdroidIndexRepository(context).githubPackages() }.getOrDefault(emptyMap()).forEach { (pkg, repo) ->
-        if (pkg !in base) base[pkg] = repo
-    }
-    return base
+    return KnownGithubAndroidApps.PACKAGE_TO_REPO
 }
 
 /** Curated map of well-known open-source Android apps (package -> owner/repo). */

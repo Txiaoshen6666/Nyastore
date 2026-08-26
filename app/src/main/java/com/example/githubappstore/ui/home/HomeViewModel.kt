@@ -1,4 +1,5 @@
 package com.example.githubappstore.ui.home
+import kotlinx.coroutines.flow.first
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

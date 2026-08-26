@@ -60,7 +60,7 @@ class CachedGitHubRepository(
         if (cached != null) return cached.map { AppItem(repo = it.toRepo(), category = AppCategory.Trending) }
         val fresh = upstream.trendingAndroidApps()
         val now = System.currentTimeMillis()
-        withContext(Dispatchers.IO) { dao.clearFeed(feed); dao.upsertRepos(fresh.map { it.repo.cached(it.repo.fullName, feed, now) }) }
+        withContext(Dispatchers.IO) { dao.clearFeed(feed); dao.upsertRepos(fresh.map { it.repo.cached(it.repo.full_name, feed, now) }) }
         return fresh
     }
 
@@ -69,7 +69,7 @@ class CachedGitHubRepository(
         if (cached != null) return cached.map { AppItem(repo = it.toRepo(), category = AppCategory.Trending) }
         val fresh = upstream.popularAndroidApps(perPage)
         val now = System.currentTimeMillis()
-        withContext(Dispatchers.IO) { dao.clearFeed(feed); dao.upsertRepos(fresh.map { it.repo.cached(it.repo.fullName, feed, now) }) }
+        withContext(Dispatchers.IO) { dao.clearFeed(feed); dao.upsertRepos(fresh.map { it.repo.cached(it.repo.full_name, feed, now) }) }
         return fresh
     }
 

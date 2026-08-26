@@ -55,3 +55,11 @@ object VersionComparator {
 
     enum class UpdateDiff { None, Major, Minor, Patch, PreRelease, Build, Unknown }
 }
+
+sealed class VersionDiff {
+    object Major : VersionDiff()
+    object Minor : VersionDiff()
+    object Patch : VersionDiff()
+    object None : VersionDiff()
+    object Unknown : VersionDiff()
+}

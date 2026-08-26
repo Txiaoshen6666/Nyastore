@@ -1,4 +1,5 @@
 package com.example.githubappstore.ui.downloads
+import kotlinx.coroutines.flow.first
 
 import android.content.Context
 import android.content.Intent

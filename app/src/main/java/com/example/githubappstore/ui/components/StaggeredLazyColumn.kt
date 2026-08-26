@@ -1,4 +1,5 @@
 package com.example.githubappstore.ui.components
+import androidx.compose.ui.unit.dp
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
