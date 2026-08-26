@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
@@ -34,8 +35,6 @@ android {
     kotlinOptions { jvmTarget = "21" }
 
     buildFeatures { compose = true }
-    composeOptions { kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get() }
-    kotlinOptions { freeCompilerArgs = listOf("-Xopt-in=kotlin.RequiresOptIn") }
 
     // Room (KSP2 symbol-processor model in 2.7)
     dependencies.add("ksp", libs.room.compiler)
