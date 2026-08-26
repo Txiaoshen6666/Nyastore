@@ -1,77 +1,41 @@
 name: Build GitStore
 
 on:
-    push:
-          branches: ["main", "master"]
-              tags: ["v*"]
-                pull_request:
-                      branches: ["main", "master"]
-                        workflow_dispatch:
+  push:
+    branches: ["main", "master"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main", "master"]
+  workflow_dispatch:
 
-                          env:
-                              GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
+env:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
 
-                              jobs:
-                                  build:
-                                        runs-on: ubuntu-latest
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-                                            steps:
-                                                    - name: Checkout
-                                                            uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: gradle
 
-                                                                  # ── JDK 21（KSP2 + Kotlin 2.1 + AGP 8.7 必需）──────────────
-                                                                  #       - name: Set up JDK 21
-                                                                  #               uses: actions/setup-java@v4
-                                                                  #                       with:
-                                                                  #                                 java-version: "21"
-                                                                  #                                           distribution: "temurin"
-                                                                  #                                                     cache: gradle
-                                                                  #
-                                                                  #                                                           # ── Android SDK（自动接受 licenses + 安装 platform 35）──────
-                                                                  #                                                                 - name: Setup Android SDK
-                                                                  #                                                                         uses: android-actions/setup-android@v3
-                                                                  #                                                                                 with:
-                                                                  #                                                                                           packages: "platforms;android-35 build-tools;35.0.0"
-                                                                  #
-                                                                  #                                                                                                 # ── Gradle 缓存（加速后续构建）────────────────────────────
-                                                                  #                                                                                                       - name: Cache Gradle
-                                                                  #                                                                                                               uses: actions/cache@v4
-                                                                  #                                                                                                                       with:
-                                                                  #                                                                                                                                 path: |
-                                                                  #                                                                                                                                             ~/.gradle/caches
-                                                                  #                                                                                                                                                         ~/.gradle/wrapper
-                                                                  #                                                                                                                                                                   key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
-                                                                  #                                                                                                                                                                             restore-keys: |
-                                                                  #                                                                                                                                                                                         ${{ runner.os }}-gradle-
-                                                                  #
-                                                                  #                                                                                                                                                                                               # ── gradlew 执行权限 ──────────────────────────────────────
-                                                                  #                                                                                                                                                                                                     - name: Grant execute permission
-                                                                  #                                                                                                                                                                                                             run: chmod +x gradlew
-                                                                  #
-                                                                  #                                                                                                                                                                                                                   # ── 编译检查（PR 时只 build，不产出 APK）──────────────────
-                                                                  #                                                                                                                                                                                                                         - name: Build (PR / Debug)
-                                                                  #                                                                                                                                                                                                                                 if: github.event_name == 'pull_request'
-                                                                  #                                                                                                                                                                                                                                         run: ./gradlew assembleDebug --no-daemon --stacktrace
-                                                                  #
-                                                                  #                                                                                                                                                                                                                                               # ── Release APK ──────────────────────────────────────────
-                                                                  #                                                                                                                                                                                                                                                     - name: Build Release APK
-                                                                  #                                                                                                                                                                                                                                                             if: github.event_name != 'pull_request'
-                                                                  #                                                                                                                                                                                                                                                                     run: ./gradlew assembleRelease --no-daemon --stacktrace
-                                                                  #
-                                                                  #                                                                                                                                                                                                                                                                           # ── 上传未签名 APK（自用直接 adb install 即可）──────────
-                                                                  #                                                                                                                                                                                                                                                                                 - name: Upload APK Artifact
-                                                                  #                                                                                                                                                                                                                                                                                         if: github.event_name != 'pull_request'
-                                                                  #                                                                                                                                                                                                                                                                                                 uses: actions/upload-artifact@v4
-                                                                  #                                                                                                                                                                                                                                                                                                         with:
-                                                                  #                                                                                                                                                                                                                                                                                                                   name: GitStore-Release-APK
-                                                                  #                                                                                                                                                                                                                                                                                                                             path: app/build/outputs/apk/release/app-release-unsigned.apk
-                                                                  #                                                                                                                                                                                                                                                                                                                                       retention-days: 30
-                                                                  #
-                                                                  #                                                                                                                                                                                                                                                                                                                                             # ── 打 Tag 时自动创建 GitHub Release ─────────────────────
-                                                                  #                                                                                                                                                                                                                                                                                                                                                   - name: Release
-                                                                  #                                                                                                                                                                                                                                                                                                                                                           if: startsWith(github.ref, 'refs/tags/v')
-                                                                  #                                                                                                                                                                                                                                                                                                                                                                   uses: softprops/action-gh-release@v2
-                                                                  #                                                                                                                                                                                                                                                                                                                                                                           with:
-                                                                  #                                                                                                                                                                                                                                                                                                                                                                                     files: app/build/outputs/apk/release/app-release-unsigned.apk
-                                                                  #                                                                                                                                                                                                                                                                                                                                                                                               generate_release_notes: true
-                                                                  #
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-35 build-tools;35.0.0"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+ 
+
