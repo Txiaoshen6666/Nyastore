@@ -53,14 +53,14 @@ object VersionComparator {
             else -> VersionDiff.None
         }
     }
+}
 
-    sealed class VersionDiff {
-        data object Major : VersionDiff()
-        data object Minor : VersionDiff()
-        data object Patch : VersionDiff()
-        data object None : VersionDiff()
-        data object Unknown : VersionDiff()
-        data object PreRelease : VersionDiff()
-        data object Build : VersionDiff()
-    }
+sealed class VersionDiff {
+    data object Major : VersionDiff()
+    data object Minor : VersionDiff()
+    data object Patch : VersionDiff()
+    data object None : VersionDiff()
+    data object Unknown : VersionDiff()
+    data object PreRelease : VersionDiff()
+    data object Build : VersionDiff()
 }

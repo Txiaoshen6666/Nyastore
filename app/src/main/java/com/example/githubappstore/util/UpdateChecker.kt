@@ -24,7 +24,7 @@ data class UpdateCandidate(
 ) {
     val hasUpdate: Boolean
         get() = VersionComparator.isUpdateAvailable(latestVersionTag, installed.versionName)
-    val diff: VersionComparator.UpdateDiff
+    val diff: VersionDiff
         get() = VersionComparator.diff(latestVersionTag, installed.versionName)
 }
 
