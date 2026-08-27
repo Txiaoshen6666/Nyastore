@@ -4,8 +4,9 @@ Android app, single Gradle module `:app`. Kotlin 2.1.20 + Jetpack Compose (Mater
 
 ## Build & verify
 
+- **DO NOT run local builds** (e.g. `./gradlew assembleDebug`/`assembleRelease`) on this machine — rely on CI for build verification. Verify changes by code review instead of building locally.
 - Requires **JDK 21** and Android SDK `platforms;android-35` + `build-tools;35.0.0`.
-- There are **no automated tests** in this repo. Verification = a successful build.
+- There are **no automated tests** in this repo. Verification = a successful build (run by CI, not locally).
   - `./gradlew assembleRelease` (CI command; use `--no-daemon --stacktrace` like CI)
   - `./gradlew assembleDebug` for faster local builds
 - Release APK (unsigned) lands at `app/build/outputs/apk/release/app-release-unsigned.apk`.

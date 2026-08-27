@@ -12,14 +12,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.githubappstore.R
 import com.example.githubappstore.navigation.TopLevelRoute
 import com.example.githubappstore.ui.dlupdates.DlUpdatesRoute
 import com.example.githubappstore.ui.home.HomeRoute
@@ -75,7 +73,7 @@ fun GitStoreBottomBar(
                 },
                 icon = {
                     Icon(
-                        painter = painterResource(id = route.iconRes),
+                        imageVector = route.icon,
                         contentDescription = route.label
                     )
                 },
