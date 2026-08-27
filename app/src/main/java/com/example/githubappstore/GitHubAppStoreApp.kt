@@ -8,10 +8,12 @@ import com.example.githubappstore.data.remote.GitHubApiService
 import com.example.githubappstore.data.settings.AppSettings
 import com.example.githubappstore.util.ApkDownloader
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 
 class GitHubAppStoreApp : Application() {

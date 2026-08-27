@@ -72,7 +72,7 @@ class CachedGitHubRepository(
         val feed = "search:${query}:${category.key}:$page"
         val cached = dao.reposByFeed(feed).takeIf { it.isNotEmpty() && isFresh(it.first().cachedAt) }
         if (cached != null) return cached.map { AppItem(repo = it.toRepo(), category = category) }
-        val fresh = upstream.searchRepos(q = q, page = page).items
+        val fresh = upstream.searchRepos(query = q, page = page).items
         val now = System.currentTimeMillis()
         withContext(Dispatchers.IO) {
             dao.clearFeed(feed)
@@ -85,7 +85,7 @@ class CachedGitHubRepository(
         val feed = "trending"
         val cached = dao.reposByFeed(feed).takeIf { it.isNotEmpty() && isFresh(it.first().cachedAt) }
         if (cached != null) return cached.map { AppItem(repo = it.toRepo(), category = AppCategory.Trending) }
-        val fresh = upstream.searchRepos(q = "topic:android", sort = "updated", order = "desc", perPage = 30).items
+        val fresh = upstream.searchRepos(query = "topic:android", sort = "updated", order = "desc", perPage = 30).items
         val now = System.currentTimeMillis()
         withContext(Dispatchers.IO) {
             dao.clearFeed(feed)
@@ -99,7 +99,7 @@ class CachedGitHubRepository(
         val cached = dao.reposByFeed(feed).takeIf { it.isNotEmpty() && isFresh(it.first().cachedAt) }
         if (cached != null) return cached.map { AppItem(repo = it.toRepo(), category = AppCategory.Trending) }
         val fresh = upstream.searchRepos(
-            q = "topic:android stars:>1000", sort = "stars", order = "desc", perPage = perPage
+            query = "topic:android stars:>1000", sort = "stars", order = "desc", perPage = perPage
         ).items
         val now = System.currentTimeMillis()
         withContext(Dispatchers.IO) {

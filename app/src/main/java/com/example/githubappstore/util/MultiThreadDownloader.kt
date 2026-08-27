@@ -1,5 +1,4 @@
 package com.example.githubappstore.util
-import kotlinx.coroutines.channels.trySend
 
 import android.content.Context
 import android.net.Uri
@@ -10,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -33,7 +33,7 @@ class MultiThreadDownloader(private val context: Context, private val threadCoun
         destDir.mkdirs(); val finalFile = File(destDir, fileName)
         trySend(DownloadEvent.Queued(fileName))
         val totalSize = probeSize(url)
-        if (totalSize <= 0) { downloadSingle(url, finalFile, fileName); close(); return@callbackFlow }
+        if (totalSize <= 0) { downloadSingle(this, url, finalFile, fileName); close(); return@callbackFlow }
         val n = threadCount.coerceIn(2, 8)
         val chunkSize = ceil(totalSize.toDouble() / n).toLong()
         val chunks = List(n) { i -> Chunk(i * chunkSize, ((i + 1) * chunkSize - 1).coerceAtMost(totalSize - 1), File(destDir, "$fileName.part$i")) }
@@ -73,17 +73,17 @@ class MultiThreadDownloader(private val context: Context, private val threadCoun
 
     private fun writeBody(body: ResponseBody, out: File) { out.outputStream().use { os -> body.byteStream().use { ins -> val buf = ByteArray(64 * 1024); var read: Int; while (ins.read(buf).also { read = it } != -1) os.write(buf, 0, read) } } }
 
-    private suspend fun downloadSingle(url: String, dest: File, fileName: String) {
+    private suspend fun downloadSingle(channel: SendChannel<DownloadEvent>, url: String, dest: File, fileName: String) {
         withContext(Dispatchers.IO) {
             try { val req = Request.Builder().url(url).build()
                 client.newCall(req).execute().use { resp ->
                     if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}")
                     val body = resp.body ?: throw RuntimeException("empty body")
                     val total = body.contentLength().takeIf { it > 0 } ?: -1L
-                    dest.outputStream().use { os -> body.byteStream().use { ins -> val buf = ByteArray(64 * 1024); var written = 0L; var read: Int; while (ins.read(buf).also { read = it } != -1) { os.write(buf, 0, read); written += read; if (total > 0) trySend(DownloadEvent.Progress(fileName, written, total)) } } }
-                    trySend(DownloadEvent.Succeeded(fileName, Uri.fromFile(dest).toString()))
+                    dest.outputStream().use { os -> body.byteStream().use { ins -> val buf = ByteArray(64 * 1024); var written = 0L; var read: Int; while (ins.read(buf).also { read = it } != -1) { os.write(buf, 0, read); written += read; if (total > 0) channel.trySend(DownloadEvent.Progress(fileName, written, total)) } } }
+                    channel.trySend(DownloadEvent.Succeeded(fileName, Uri.fromFile(dest).toString()))
                 }
-            } catch (t: Throwable) { trySend(DownloadEvent.Failed(fileName, t.message ?: "download failed")) }
+            } catch (t: Throwable) { channel.trySend(DownloadEvent.Failed(fileName, t.message ?: "download failed")) }
         }
     }
 

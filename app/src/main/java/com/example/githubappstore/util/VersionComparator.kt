@@ -1,7 +1,7 @@
 package com.example.githubappstore.util
 
 import org.semver4j.Semver
-import org.semver4j.VersionDiff as SemverDiff
+import org.semver4j.Semver.VersionDiff as SemverDiff
 
 /**
  * Version comparison backed by [semver4j]. Normalises common Android/GitHub tag
