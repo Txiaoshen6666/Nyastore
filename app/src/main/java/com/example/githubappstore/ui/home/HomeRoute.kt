@@ -3,16 +3,21 @@ package com.example.githubappstore.ui.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -32,7 +37,6 @@ import com.example.githubappstore.data.model.GhRelease
 import com.example.githubappstore.domain.AppCategory
 import com.example.githubappstore.domain.AppItem
 import com.example.githubappstore.ui.components.AppCard
-import com.example.githubappstore.ui.components.CategoryChip
 import com.example.githubappstore.ui.components.LoadingPraying
 import com.example.githubappstore.ui.components.StaggeredLazyColumn
 import com.example.githubappstore.ui.components.StaggerItem
@@ -42,14 +46,14 @@ import kotlinx.coroutines.delay
 
 /**
  * Home route: recommendation feed (My Stars first + popular high-star) + search
- * (300ms debounce -> GitHub Search API) + category chips + pull-to-refresh.
+ * (300ms debounce -> GitHub Search API) + pull-to-refresh. Category switching is
+ * hidden from the UI but the [selected] state is retained.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = viewModel()) {
     val feedState by homeVm.feedState.collectAsState()
     val searchState by homeVm.searchState.collectAsState()
-    val categories = remember { AppCategory.values().toList() }
     var selected by remember { mutableStateOf(AppCategory.All) }
     var query by remember { mutableStateOf("") }
     var searchActive by remember { mutableStateOf(false) }
@@ -68,15 +72,29 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
     }
     val isSearching = query.trim().length >= 2 && searchState !is HomeViewModel.SearchUiState.Idle
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        SearchBar(
-            query = query, onQueryChange = { query = it },
-            onSearch = { homeVm.search(selected, query); searchActive = false },
-            active = searchActive, onActiveChange = { searchActive = it },
-            placeholder = { Text("搜索开源应用 / 仓库名…") },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp), colors = SearchBarDefaults.colors()
-        ) {}
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 10.dp)) { items(categories) { cat -> CategoryChip(label = cat.label, selected = selected == cat, onClick = { selected = cat }) } } }
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("GitStore", style = MaterialTheme.typography.headlineSmall)
+            IconButton(onClick = { searchActive = true }) {
+                Icon(Icons.Default.Search, contentDescription = "搜索")
+            }
+        }
+        if (searchActive) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text("搜索...") },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { searchActive = false }),
+                trailingIcon = {
+                    IconButton(onClick = { searchActive = false; query = "" }) {
+                        Icon(Icons.Default.Close, contentDescription = "关闭")
+                    }
+                }
+            )
+        }
 
         PullToRefreshBox(modifier = Modifier.fillMaxSize(), state = refreshState, isRefreshing = refreshing, onRefresh = { refreshing = true; if (isSearching) homeVm.reloadSearch() else homeVm.load() }) {
             if (isSearching) when (val s = searchState) {
