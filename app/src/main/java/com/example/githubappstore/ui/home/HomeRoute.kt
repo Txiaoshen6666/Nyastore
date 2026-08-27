@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.ColumnScope.weight as columnWeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -74,7 +73,7 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
         ) {}
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 10.dp)) { items(categories) { cat -> CategoryChip(label = cat.label, selected = selected == cat, onClick = { selected = cat }) } } }
 
-        PullToRefreshBox(modifier = Modifier.fillMaxWidth().columnWeight(1f), state = refreshState, isRefreshing = refreshing, onRefresh = { refreshing = true; if (isSearching) homeVm.reloadSearch() else homeVm.load(); refreshing = false }) {
+        PullToRefreshBox(modifier = Modifier.fillMaxSize(), state = refreshState, isRefreshing = refreshing, onRefresh = { refreshing = true; if (isSearching) homeVm.reloadSearch() else homeVm.load(); refreshing = false }) {
             if (isSearching) when (val s = searchState) {
                 is HomeViewModel.SearchUiState.Loading -> LoadingPraying()
                 is HomeViewModel.SearchUiState.Empty -> Text("没有找到相关应用", modifier = Modifier.padding(16.dp))
