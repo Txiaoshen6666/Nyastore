@@ -116,6 +116,5 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
                     else items(feed.popular, key = { "pop-${it.repo.id}" }) { app -> StaggerItem { AppCard(app = app, onClick = { activeApp = app }) } }
                 } }
             }
-        }
     if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, onDismiss = { activeApp = null }, onDownload = { asset -> dlVm.enqueue(asset); activeApp = null }, onOpenRepo = { activeApp = null })
 }
