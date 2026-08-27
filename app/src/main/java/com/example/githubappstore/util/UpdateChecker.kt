@@ -3,6 +3,7 @@ package com.example.githubappstore.util
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import com.example.githubappstore.data.fdroid.FdroidIndexRepository
 import com.example.githubappstore.data.model.GhRelease
 import com.example.githubappstore.domain.AppItem
 
@@ -50,7 +51,9 @@ fun listInstalledGithubApps(context: Context, knownPackages: Map<String, String>
  * are package-authoritative.
  */
 suspend fun effectiveGithubPackages(context: Context): Map<String, String> {
-    return KnownGithubAndroidApps.PACKAGE_TO_REPO
+    val froid = runCatching { FdroidIndexRepository(context).githubPackages() }.getOrDefault(emptyMap())
+    // F-Droid entries win on conflict because they are package-authoritative.
+    return LinkedHashMap(KnownGithubAndroidApps.PACKAGE_TO_REPO).apply { putAll(froid) }
 }
 
 /** Curated map of well-known open-source Android apps (package -> owner/repo). */

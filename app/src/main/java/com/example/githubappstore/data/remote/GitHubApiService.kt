@@ -13,7 +13,7 @@ import retrofit2.http.Query
 /** GitHub REST API (v3) for repositories and release assets. */
 interface GitHubApiService {
 
-    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @Headers("Accept: application/json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("search/repositories")
     suspend fun searchRepos(
         @Query("q") query: String,
@@ -24,7 +24,7 @@ interface GitHubApiService {
         @Header("Authorization") auth: String? = null
     ): GhSearchResponse
 
-    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @Headers("Accept: application/json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("repos/{owner}/{repo}")
     suspend fun getRepo(
         @Path("owner") owner: String,
@@ -32,7 +32,7 @@ interface GitHubApiService {
         @Header("Authorization") auth: String? = null
     ): GhRepo
 
-    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @Headers("Accept: application/json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("repos/{owner}/{repo}/releases")
     suspend fun listReleases(
         @Path("owner") owner: String,
@@ -41,7 +41,7 @@ interface GitHubApiService {
         @Header("Authorization") auth: String? = null
     ): List<GhRelease>
 
-    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @Headers("Accept: application/json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("user/starred")
     suspend fun listStarred(
         @Query("sort") sort: String = "updated",
@@ -51,7 +51,7 @@ interface GitHubApiService {
         @Header("Authorization") auth: String? = null
     ): List<GhRepo>
 
-    @Headers("Accept: application/vnd.github+json", "X-GitHub-Api-Version: 2022-11-28")
+    @Headers("Accept: application/json", "X-GitHub-Api-Version: 2022-11-28")
     @GET("user")
     suspend fun getAuthenticatedUser(@Header("Authorization") auth: String? = null): GhUser
 }

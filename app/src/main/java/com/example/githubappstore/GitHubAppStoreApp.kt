@@ -3,10 +3,15 @@ package com.example.githubappstore
 import android.app.Application
 import androidx.room.Room
 import com.example.githubappstore.data.cache.AppDatabase
+import com.example.githubappstore.data.cache.CachedGitHubRepository
+import com.example.githubappstore.data.remote.GitHubApiService
+import com.example.githubappstore.data.settings.AppSettings
+import com.example.githubappstore.util.ApkDownloader
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 class GitHubAppStoreApp : Application() {
@@ -14,8 +19,22 @@ class GitHubAppStoreApp : Application() {
     lateinit var database: AppDatabase
         private set
 
-    lateinit var gitHubRepository: com.example.githubappstore.data.GitHubRepository
+    lateinit var cachedRepository: CachedGitHubRepository
         private set
+
+    lateinit var settings: AppSettings
+        private set
+
+    lateinit var apkDownloader: ApkDownloader
+        private set
+
+    companion object {
+        /** The application instance, exposed as the DI container. Being a
+         *  [Application] (i.e. a [android.content.Context]) it can also be passed
+         *  directly to components that need a [android.content.Context]. */
+        lateinit var container: GitHubAppStoreApp
+            private set
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -24,6 +43,8 @@ class GitHubAppStoreApp : Application() {
             AppDatabase::class.java,
             "github_app_store.db"
         ).build()
+
+        settings = AppSettings(this)
 
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
@@ -37,9 +58,14 @@ class GitHubAppStoreApp : Application() {
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.github.com/")
             .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
             .build()
 
-        gitHubRepository = retrofit.create(com.example.githubappstore.data.GitHubRepository::class.java)
+        val api = retrofit.create(GitHubApiService::class.java)
+        cachedRepository = CachedGitHubRepository(api, database) {
+            settings.githubToken.first().takeIf { it.isNotBlank() }
+        }
+        apkDownloader = ApkDownloader(this)
+        container = this
     }
 }

@@ -43,7 +43,7 @@ fun AccountSection(modifier: Modifier = Modifier, vm: AccountViewModel = viewMod
     var draft by remember { mutableStateOf(token) }
     var activeApp by remember { mutableStateOf<com.example.githubappstore.domain.AppItem?>(null) }
     var release by remember { mutableStateOf<GhRelease?>(null) }
-    LaunchedEffect(activeApp) { activeApp?.let { app -> release = runCatching { GitHubAppStoreApp.container.gitHubRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } ?: run { release = null } }
+    LaunchedEffect(activeApp) { activeApp?.let { app -> release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } ?: run { release = null } }
 
     Card(elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {

@@ -1,6 +1,7 @@
 package com.example.githubappstore.util
 
 import org.semver4j.Semver
+import org.semver4j.VersionDiff as SemverDiff
 
 /**
  * Version comparison backed by [semver4j]. Normalises common Android/GitHub tag
@@ -37,29 +38,29 @@ object VersionComparator {
     }
 
     /** Convenience: diff category between latest tag and installed version. */
-    fun diff(latestTag: String?, installedVersion: String?): UpdateDiff {
+    fun diff(latestTag: String?, installedVersion: String?): VersionDiff {
         val tag = latestTag?.trim()?.removePrefix("v")?.trim().orEmpty()
         val installed = installedVersion?.trim()?.removePrefix("v")?.trim().orEmpty()
-        if (tag.isEmpty() || installed.isEmpty()) return UpdateDiff.Unknown
-        val t = Semver.parse(tag) ?: return UpdateDiff.Unknown
-        val i = Semver.parse(installed) ?: return UpdateDiff.Unknown
+        if (tag.isEmpty() || installed.isEmpty()) return VersionDiff.Unknown
+        val t = Semver.parse(tag) ?: return VersionDiff.Unknown
+        val i = Semver.parse(installed) ?: return VersionDiff.Unknown
         return when (t.diff(i)) {
-            org.semver4j.VersionDiff.MAJOR -> UpdateDiff.Major
-            org.semver4j.VersionDiff.MINOR -> UpdateDiff.Minor
-            org.semver4j.VersionDiff.PATCH -> UpdateDiff.Patch
-            org.semver4j.VersionDiff.PRE_RELEASE -> UpdateDiff.PreRelease
-            org.semver4j.VersionDiff.BUILD -> UpdateDiff.Build
-            else -> UpdateDiff.None
+            SemverDiff.MAJOR -> VersionDiff.Major
+            SemverDiff.MINOR -> VersionDiff.Minor
+            SemverDiff.PATCH -> VersionDiff.Patch
+            SemverDiff.PRE_RELEASE -> VersionDiff.PreRelease
+            SemverDiff.BUILD -> VersionDiff.Build
+            else -> VersionDiff.None
         }
     }
 
-    enum class UpdateDiff { None, Major, Minor, Patch, PreRelease, Build, Unknown }
-}
-
-sealed class VersionDiff {
-    object Major : VersionDiff()
-    object Minor : VersionDiff()
-    object Patch : VersionDiff()
-    object None : VersionDiff()
-    object Unknown : VersionDiff()
+    sealed class VersionDiff {
+        data object Major : VersionDiff()
+        data object Minor : VersionDiff()
+        data object Patch : VersionDiff()
+        data object None : VersionDiff()
+        data object Unknown : VersionDiff()
+        data object PreRelease : VersionDiff()
+        data object Build : VersionDiff()
+    }
 }
