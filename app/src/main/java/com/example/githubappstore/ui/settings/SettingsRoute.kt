@@ -63,6 +63,7 @@ fun SettingsRoute() {
     var sliderCount by remember { mutableStateOf(threadCount.coerceIn(MIN_THREADS, MAX_THREADS)) }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        AccountSection(modifier = Modifier.padding(bottom = 14.dp))
         Card(elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("镜像反代", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -100,7 +101,6 @@ fun SettingsRoute() {
         Card(elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
             Column(modifier = Modifier.padding(16.dp)) { Text("关于", style = MaterialTheme.typography.titleLarge); Text("数据来自 GitHub 公开 API；本应用不托管任何二进制文件。镜像站为社区公益代理，可用性可能变化。", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant); Text("本地 Room 缓存（1 小时 TTL）减少 API 限流并支持离线浏览；更新检测合并 F-Droid 索引以覆盖更多已装开源应用；版本比较采用 semver4j（正确处理 1.10 > 1.9 等语义化版本）。", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp)) }
         }
-        AccountSection(modifier = Modifier.padding(top = 14.dp))
     }
 
     if (showCustomHost) AlertDialog(onDismissRequest = { showCustomHost = false }, title = { Text("自定义镜像主机") }, text = { Column { Text("请输入镜像主机地址（含 https://，不含末尾斜杠），例如 https://my.mirror.com", style = MaterialTheme.typography.bodyMedium); OutlinedTextField(value = customHost, onValueChange = { customHost = it }, label = { Text("主机地址") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) } }, confirmButton = { TextButton(onClick = { scope.launch { settings.setMirrorHost(customHost.ifBlank { DEFAULT_MIRROR_HOST }) }; showCustomHost = false }) { Text("保存") } }, dismissButton = { TextButton(onClick = { showCustomHost = false }) { Text("取消") } })
