@@ -18,6 +18,11 @@ import java.util.concurrent.TimeUnit
 
 class GitHubAppStoreApp : Application() {
 
+    private val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    }
+
     lateinit var database: AppDatabase
         private set
 
@@ -60,7 +65,7 @@ class GitHubAppStoreApp : Application() {
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.github.com/")
             .client(client)
-            .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
 
         val api = retrofit.create(GitHubApiService::class.java)
