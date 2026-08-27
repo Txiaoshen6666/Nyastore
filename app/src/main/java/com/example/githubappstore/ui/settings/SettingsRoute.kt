@@ -2,6 +2,8 @@ package com.example.githubappstore.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -60,7 +62,7 @@ fun SettingsRoute() {
     var showThreadPicker by remember { mutableStateOf(false) }
     var sliderCount by remember { mutableStateOf(threadCount.coerceIn(MIN_THREADS, MAX_THREADS)) }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Card(elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("镜像反代", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
