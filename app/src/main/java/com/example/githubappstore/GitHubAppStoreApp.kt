@@ -1,8 +1,8 @@
 package com.example.githubappstore
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import androidx.room.Room
-import com.example.githubappstore.BuildConfig
 import com.example.githubappstore.data.cache.AppDatabase
 import com.example.githubappstore.data.cache.CachedGitHubRepository
 import com.example.githubappstore.data.remote.GitHubApiService
@@ -54,8 +54,9 @@ class GitHubAppStoreApp : Application() {
 
         settings = AppSettings(this)
 
+        val debuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         val logging = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+            level = if (debuggable) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
         }
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
