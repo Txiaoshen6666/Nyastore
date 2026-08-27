@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,10 +30,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.widget.Toast
 import com.example.githubappstore.GitHubAppStoreApp
 import com.example.githubappstore.data.model.GhRelease
 import com.example.githubappstore.domain.AppCategory
@@ -60,6 +63,7 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
     var searchActive by remember { mutableStateOf(false) }
     var activeApp by remember { mutableStateOf<AppItem?>(null) }
     var release by remember { mutableStateOf<GhRelease?>(null) }
+    val context = LocalContext.current
 
     LaunchedEffect(query, selected) { if (query.trim().length >= 2) { delay(300); homeVm.search(selected, query) } else homeVm.search(selected, "") }
     LaunchedEffect(activeApp) { activeApp?.let { app -> release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } ?: run { release = null } }
@@ -97,7 +101,7 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
             )
         }
 
-        PullToRefreshBox(modifier = Modifier.fillMaxSize(), state = refreshState, isRefreshing = refreshing, onRefresh = { refreshing = true; if (isSearching) homeVm.reloadSearch() else homeVm.load() }) {
+        PullToRefreshBox(modifier = Modifier.fillMaxWidth().weight(1f), state = refreshState, isRefreshing = refreshing, onRefresh = { refreshing = true; if (isSearching) homeVm.reloadSearch() else homeVm.load() }) {
             if (isSearching) when (val s = searchState) {
                 is HomeViewModel.SearchUiState.Loading -> LoadingPraying()
                 is HomeViewModel.SearchUiState.Empty -> Text("没有找到相关应用", modifier = Modifier.padding(16.dp))
@@ -117,7 +121,7 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
                     else items(feed.popular, key = { "pop-${it.repo.id}" }) { app -> StaggerItem { AppCard(app = app, onClick = { activeApp = app }) } }
                 } }
             }
-    if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, onDismiss = { activeApp = null }, onDownload = { asset -> dlVm.enqueue(asset); activeApp = null }, onOpenRepo = { activeApp = null })
-    }
+        }
+        if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, onDismiss = { activeApp = null }, onDownload = { asset -> Toast.makeText(context, "开始下载: ${asset.name}", Toast.LENGTH_SHORT).show(); dlVm.enqueue(asset); activeApp = null }, onOpenRepo = { activeApp = null })
     }
 }
