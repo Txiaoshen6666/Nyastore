@@ -2,6 +2,7 @@ package com.example.githubappstore
 
 import android.app.Application
 import androidx.room.Room
+import com.example.githubappstore.BuildConfig
 import com.example.githubappstore.data.cache.AppDatabase
 import com.example.githubappstore.data.cache.CachedGitHubRepository
 import com.example.githubappstore.data.remote.GitHubApiService

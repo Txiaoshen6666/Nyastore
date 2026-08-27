@@ -57,15 +57,15 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
     var release by remember { mutableStateOf<GhRelease?>(null) }
 
     LaunchedEffect(query, selected) { if (query.trim().length >= 2) { delay(300); homeVm.search(selected, query) } else homeVm.search(selected, "") }
+    LaunchedEffect(activeApp) { activeApp?.let { app -> release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } ?: run { release = null } }
+
+    val refreshState = rememberPullToRefreshState()
+    var refreshing by remember { mutableStateOf(false) }
     LaunchedEffect(feedState, searchState) {
         if (feedState !is HomeViewModel.FeedUiState.Loading && searchState !is HomeViewModel.SearchUiState.Loading) {
             refreshing = false
         }
     }
-    LaunchedEffect(activeApp) { activeApp?.let { app -> release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } ?: run { release = null } }
-
-    val refreshState = rememberPullToRefreshState()
-    var refreshing by remember { mutableStateOf(false) }
     val isSearching = query.trim().length >= 2 && searchState !is HomeViewModel.SearchUiState.Idle
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
