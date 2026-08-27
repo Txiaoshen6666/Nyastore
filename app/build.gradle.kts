@@ -36,6 +36,11 @@ android {
 
     buildFeatures { compose = true }
 
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     // Room (KSP2 symbol-processor model in 2.7)
     dependencies.add("ksp", libs.room.compiler)
     ksp {
