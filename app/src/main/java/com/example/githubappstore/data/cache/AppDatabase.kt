@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [CachedRepo::class, CachedRelease::class, CachedStarred::class],
-    version = 1, exportSchema = true
+    version = 1, exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun cacheDao(): CacheDao
