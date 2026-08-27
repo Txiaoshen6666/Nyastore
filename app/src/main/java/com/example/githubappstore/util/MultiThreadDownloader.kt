@@ -87,5 +87,16 @@ class MultiThreadDownloader(private val context: Context, private val threadCoun
         }
     }
 
-    private fun mergeChunks(chunks: List<Chunk>, finalFile: File) { RandomAccessFile(finalFile, "rw").use { raf -> raf.setLength(0); chunks.forEach { raf.write(it.file.readBytes()) } } }
+    private fun mergeChunks(chunks: List<Chunk>, finalFile: File) {
+        RandomAccessFile(finalFile, "rw").use { raf ->
+            raf.setLength(0)
+            val buf = ByteArray(64 * 1024)
+            chunks.forEach { chunk ->
+                chunk.file.inputStream().buffered().use { ins ->
+                    var read: Int
+                    while (ins.read(buf).also { read = it } != -1) raf.write(buf, 0, read)
+                }
+            }
+        }
+    }
 }

@@ -57,6 +57,11 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
     var release by remember { mutableStateOf<GhRelease?>(null) }
 
     LaunchedEffect(query, selected) { if (query.trim().length >= 2) { delay(300); homeVm.search(selected, query) } else homeVm.search(selected, "") }
+    LaunchedEffect(feedState, searchState) {
+        if (feedState !is HomeViewModel.FeedUiState.Loading && searchState !is HomeViewModel.SearchUiState.Loading) {
+            refreshing = false
+        }
+    }
     LaunchedEffect(activeApp) { activeApp?.let { app -> release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } ?: run { release = null } }
 
     val refreshState = rememberPullToRefreshState()
@@ -73,7 +78,7 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
         ) {}
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 10.dp)) { items(categories) { cat -> CategoryChip(label = cat.label, selected = selected == cat, onClick = { selected = cat }) } } }
 
-        PullToRefreshBox(modifier = Modifier.fillMaxSize(), state = refreshState, isRefreshing = refreshing, onRefresh = { refreshing = true; if (isSearching) homeVm.reloadSearch() else homeVm.load(); refreshing = false }) {
+        PullToRefreshBox(modifier = Modifier.fillMaxSize(), state = refreshState, isRefreshing = refreshing, onRefresh = { refreshing = true; if (isSearching) homeVm.reloadSearch() else homeVm.load() }) {
             if (isSearching) when (val s = searchState) {
                 is HomeViewModel.SearchUiState.Loading -> LoadingPraying()
                 is HomeViewModel.SearchUiState.Empty -> Text("没有找到相关应用", modifier = Modifier.padding(16.dp))
