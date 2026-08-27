@@ -34,7 +34,7 @@ class HomeViewModel : ViewModel() {
                 val token = settings.githubToken.first().takeIf { it.isNotBlank() }
                 val stars = if (token != null) runCatching { repo.starredAndroidApps() }.getOrDefault(emptyList()) else emptyList()
                 val popular = runCatching { repo.popularAndroidApps(perPage = 20) }.getOrDefault(emptyList())
-                FeedUiState.Success(HomeFeed(stars = stars, popular = popular))
+                FeedUiState.Success(HomeFeed(stars = stars, popular = popular.shuffled()))
             }.getOrElse { FeedUiState.Error(it.message ?: "加载失败") }.also { _feedState.value = it }
         }
     }
