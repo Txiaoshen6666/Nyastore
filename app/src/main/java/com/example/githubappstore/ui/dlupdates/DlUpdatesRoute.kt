@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.githubappstore.domain.DownloadStatus
 import com.example.githubappstore.ui.components.InstallBottomSheet
@@ -49,7 +50,7 @@ import com.example.githubappstore.util.UpdateCandidate
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DlUpdatesRoute(dlVm: DownloadViewModel = viewModel(), upVm: UpdatesViewModel = viewModel()) {
+fun DlUpdatesRoute(dlVm: DownloadViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner), upVm: UpdatesViewModel = viewModel()) {
     val tasks by dlVm.tasks.collectAsState()
     val upState by upVm.uiState.collectAsState()
     val refreshing = upState is UpdatesViewModel.UiState.Scanning

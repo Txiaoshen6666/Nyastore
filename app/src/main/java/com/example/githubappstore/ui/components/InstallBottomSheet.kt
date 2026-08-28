@@ -27,8 +27,9 @@ import com.example.githubappstore.domain.AppItem
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InstallBottomSheet(
-    app: AppItem, release: GhRelease?, onDismiss: () -> Unit,
+    app: AppItem, release: GhRelease?, releaseError: String? = null, onDismiss: () -> Unit,
     onDownload: (com.example.githubappstore.data.model.GhAsset) -> Unit, onOpenRepo: () -> Unit,
+    onRetryRelease: () -> Unit = {},
     sheetState: androidx.compose.material3.SheetState = rememberModalBottomSheetState()
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
@@ -38,7 +39,12 @@ fun InstallBottomSheet(
             if (app.description.isNotBlank()) Text(app.description, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 8.dp))
             HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp))
             if (release == null) {
-                Text("暂未获取到 Release 信息", style = MaterialTheme.typography.bodyMedium)
+                if (releaseError != null) {
+                    Text("获取发布信息失败：$releaseError", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                    Button(onClick = onRetryRelease, modifier = Modifier.padding(top = 10.dp)) { Text("重试") }
+                } else {
+                    Text("加载发布信息中…", style = MaterialTheme.typography.bodyMedium)
+                }
             } else {
                 Text("最新发布 · ${release.tagName}", style = MaterialTheme.typography.titleLarge)
                 release.publishedAt?.let { Text(it.take(10), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }

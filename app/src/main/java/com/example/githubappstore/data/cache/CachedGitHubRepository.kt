@@ -94,16 +94,17 @@ class CachedGitHubRepository(
         return fresh.map { AppItem(repo = it, category = AppCategory.Trending) }
     }
 
-    suspend fun popularAndroidApps(perPage: Int = 25): List<AppItem> {
-        val feed = "popular"
-        val cached = dao.reposByFeed(feed).takeIf { it.isNotEmpty() && isFresh(it.first().cachedAt) }
-        if (cached != null) return cached.map { AppItem(repo = it.toRepo(), category = AppCategory.Trending) }
+    suspend fun popularAndroidApps(page: Int = 1, perPage: Int = 20, sort: String = "stars", forceRefresh: Boolean = false): List<AppItem> {
+        val feed = "popular:$page:$sort"
+        if (!forceRefresh) {
+            val cached = dao.reposByFeed(feed).takeIf { it.isNotEmpty() && isFresh(it.first().cachedAt) }
+            if (cached != null) return cached.map { AppItem(repo = it.toRepo(), category = AppCategory.Trending) }
+        }
         val fresh = upstream.searchRepos(
-            query = "topic:android stars:>1000", sort = "stars", order = "desc", perPage = perPage
+            query = "topic:android stars:>1000", sort = sort, order = "desc", perPage = perPage, page = page
         ).items
         val now = System.currentTimeMillis()
         withContext(Dispatchers.IO) {
-            dao.clearFeed(feed)
             dao.upsertRepos(fresh.map { it.cached(feed, now) })
         }
         return fresh.map { AppItem(repo = it, category = AppCategory.Trending) }

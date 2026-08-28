@@ -3,8 +3,8 @@ package com.example.githubappstore.util
 import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
-import android.os.Environment
 import androidx.core.content.getSystemService
+import java.io.File
 import com.example.githubappstore.data.model.GhAsset
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -14,14 +14,14 @@ import kotlinx.coroutines.delay
 
 /** Wraps the system [DownloadManager] to fetch a release APK and expose progress as a Flow. */
 class ApkDownloader(private val context: Context) {
-    fun enqueue(asset: GhAsset, proxiedUrl: String): Flow<DownloadEvent> = callbackFlow {
+    fun enqueue(asset: GhAsset, proxiedUrl: String, destFile: File): Flow<DownloadEvent> = callbackFlow {
         val dm = context.getSystemService<DownloadManager>() ?: run {
             trySend(DownloadEvent.Failed(asset.name, "DownloadManager unavailable")); close(); return@callbackFlow
         }
         val request = DownloadManager.Request(Uri.parse(proxiedUrl))
             .setTitle(asset.name).setDescription("GitStore 下载")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, asset.name)
+            .setDestinationUri(Uri.fromFile(destFile))
             .setMimeType("application/vnd.android.package-archive")
             .setAllowedOverMetered(true).setAllowedOverRoaming(true)
         val id = dm.enqueue(request)
