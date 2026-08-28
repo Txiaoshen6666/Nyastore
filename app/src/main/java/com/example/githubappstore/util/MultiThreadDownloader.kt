@@ -29,6 +29,8 @@ class MultiThreadDownloader(private val context: Context, private val threadCoun
 
     fun download(url: String, destFile: File): Flow<DownloadEvent> = callbackFlow {
         destFile.parentFile?.mkdirs(); val finalFile = destFile
+        val fileName = finalFile.name
+        val destDir = finalFile.parentFile ?: File(".")
         trySend(DownloadEvent.Queued(finalFile.name))
         val totalSize = probeSize(url)
         if (totalSize <= 0) { downloadSingle(this, url, finalFile, fileName); close(); return@callbackFlow }

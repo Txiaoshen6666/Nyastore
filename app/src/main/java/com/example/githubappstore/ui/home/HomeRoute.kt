@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -36,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +44,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import android.Manifest
 import android.content.Intent
 import android.os.Build
@@ -88,6 +89,7 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
     var releaseError by remember { mutableStateOf<String?>(null) }
     var pendingAsset by remember { mutableStateOf<GhAsset?>(null) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val writeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         pendingAsset?.let { asset ->
@@ -194,6 +196,6 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
                 } }
             }
         }
-        if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, releaseError = releaseError, onDismiss = { activeApp = null }, onDownload = { asset -> Toast.makeText(context, "开始下载: ${asset.name}", Toast.LENGTH_SHORT).show(); requestStorageThenDownload(asset) }, onOpenRepo = { activeApp = null }, onRetryRelease = { activeApp?.let { app -> releaseError = null; release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } })
+        if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, releaseError = releaseError, onDismiss = { activeApp = null }, onDownload = { asset -> Toast.makeText(context, "开始下载: ${asset.name}", Toast.LENGTH_SHORT).show(); requestStorageThenDownload(asset) }, onOpenRepo = { activeApp = null }, onRetryRelease = { activeApp?.let { app -> releaseError = null; scope.launch { release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } } })
     }
 }
