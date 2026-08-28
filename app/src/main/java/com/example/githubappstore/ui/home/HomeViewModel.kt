@@ -26,7 +26,9 @@ class HomeViewModel : ViewModel() {
     private var loadedQuery: String = ""
 
     private var currentPage = 1
+    private var currentSort = "stars"
     private val maxPages = 5
+    private val sortOptions = listOf("stars", "updated", "forks")
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
     private val _canLoadMore = MutableStateFlow(true)
@@ -34,8 +36,9 @@ class HomeViewModel : ViewModel() {
 
     init { load() }
 
-    fun load() {
-        currentPage = 1
+    fun load(forceRefresh: Boolean = false) {
+        currentPage = if (forceRefresh) (1..3).random() else 1
+        currentSort = if (forceRefresh) sortOptions.random() else "stars"
         _canLoadMore.value = true
         _isLoadingMore.value = false
         _feedState.value = FeedUiState.Loading
@@ -43,7 +46,7 @@ class HomeViewModel : ViewModel() {
             runCatching {
                 val token = settings.githubToken.first().takeIf { it.isNotBlank() }
                 val stars = if (token != null) runCatching { repo.starredAndroidApps() }.getOrDefault(emptyList()) else emptyList()
-                val page1 = runCatching { repo.popularAndroidApps(page = 1, perPage = 20) }.getOrDefault(emptyList()).shuffled()
+                val page1 = runCatching { repo.popularAndroidApps(page = currentPage, perPage = 20, sort = currentSort, forceRefresh = forceRefresh) }.getOrDefault(emptyList()).shuffled()
                 _canLoadMore.value = page1.size >= 20 && maxPages > 1
                 FeedUiState.Success(HomeFeed(stars = stars, popular = page1))
             }.getOrElse { FeedUiState.Error(it.message ?: "加载失败") }.also { _feedState.value = it }
@@ -55,7 +58,7 @@ class HomeViewModel : ViewModel() {
         _isLoadingMore.value = true
         viewModelScope.launch {
             val result = runCatching {
-                val next = repo.popularAndroidApps(page = currentPage + 1, perPage = 20).shuffled()
+                val next = repo.popularAndroidApps(page = currentPage + 1, perPage = 20, sort = currentSort).shuffled()
                 currentPage += 1
                 if (next.size < 20 || currentPage >= maxPages) _canLoadMore.value = false
                 val cur = (_feedState.value as? FeedUiState.Success)?.feed ?: HomeFeed(emptyList(), emptyList())

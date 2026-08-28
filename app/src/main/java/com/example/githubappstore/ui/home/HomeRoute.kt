@@ -12,6 +12,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -59,12 +64,13 @@ import com.example.githubappstore.ui.components.StaggerItem
 import com.example.githubappstore.ui.components.InstallBottomSheet
 import com.example.githubappstore.ui.downloads.DownloadViewModel
 import com.example.githubappstore.ui.downloads.hasStorageAccess
-import kotlinx.coroutines.delay
 
 /**
  * Home route: recommendation feed (My Stars first + popular high-star) + search
- * (300ms debounce -> GitHub Search API) + pull-to-refresh. Category switching is
- * hidden from the UI but the [selected] state is retained.
+ * (submitted on click/keyboard Search, not per keystroke) + pull-to-refresh.
+ * Pull-to-refresh fetches a fresh, varied batch (random sort + random page) and
+ * shuffles it. Category switching is hidden from the UI but the [selected] state
+ * is retained.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,7 +110,9 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
         }
     }
 
-    LaunchedEffect(query, selected) { if (query.trim().length >= 2) { delay(300); homeVm.search(selected, query) } else homeVm.search(selected, "") }
+    fun submitSearch() {
+        if (query.trim().length >= 2) homeVm.search(selected, query) else homeVm.search(selected, "")
+    }
     LaunchedEffect(activeApp) {
         release = null; releaseError = null
         activeApp?.let { app ->
@@ -139,7 +147,11 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
                 Icon(Icons.Default.Search, contentDescription = "搜索")
             }
         }
-        if (searchActive) {
+        AnimatedVisibility(
+            visible = searchActive,
+            enter = fadeIn(initialAlpha = 0.4f) + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -147,7 +159,12 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { searchActive = false }),
+                keyboardActions = KeyboardActions(onSearch = { submitSearch(); searchActive = false }),
+                leadingIcon = {
+                    IconButton(onClick = { submitSearch() }) {
+                        Icon(Icons.Default.Search, contentDescription = "搜索")
+                    }
+                },
                 trailingIcon = {
                     IconButton(onClick = { searchActive = false; query = "" }) {
                         Icon(Icons.Default.Close, contentDescription = "关闭")
@@ -156,7 +173,7 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
             )
         }
 
-        PullToRefreshBox(modifier = Modifier.fillMaxWidth().weight(1f), state = refreshState, isRefreshing = refreshing, onRefresh = { refreshing = true; if (isSearching) homeVm.reloadSearch() else homeVm.load() }) {
+        PullToRefreshBox(modifier = Modifier.fillMaxWidth().weight(1f), state = refreshState, isRefreshing = refreshing, onRefresh = { refreshing = true; if (isSearching) homeVm.reloadSearch() else homeVm.load(forceRefresh = true) }) {
             if (isSearching) when (val s = searchState) {
                 is HomeViewModel.SearchUiState.Loading -> LoadingPraying()
                 is HomeViewModel.SearchUiState.Empty -> Text("没有找到相关应用", modifier = Modifier.padding(16.dp))
@@ -171,7 +188,6 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
                 is HomeViewModel.FeedUiState.Error -> Text(hs.message, modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
                 is HomeViewModel.FeedUiState.Success -> { val feed = hs.feed; StaggeredLazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
                     if (feed.stars.isNotEmpty()) { item { Text("我 Star 的", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)) }; items(feed.stars, key = { "star-${it.repo.id}" }) { app -> StaggerItem { AppCard(app = app, onClick = { activeApp = app }) } } }
-                    item { Text("热门推荐", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = if (feed.stars.isNotEmpty()) 12.dp else 4.dp, bottom = 4.dp)) }
                     if (feed.popular.isEmpty()) item { Text("暂无推荐数据", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     else items(feed.popular, key = { "pop-${it.repo.id}" }) { app -> StaggerItem { AppCard(app = app, onClick = { activeApp = app }) } }
                     if (isLoadingMore) item { CircularProgressIndicator(modifier = Modifier.fillMaxWidth().padding(16.dp)) }
