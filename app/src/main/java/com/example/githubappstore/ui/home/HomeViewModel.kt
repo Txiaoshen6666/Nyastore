@@ -25,17 +25,48 @@ class HomeViewModel : ViewModel() {
     private var loadedCategory: AppCategory = AppCategory.All
     private var loadedQuery: String = ""
 
+    private var currentPage = 1
+    private val maxPages = 5
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+    private val _canLoadMore = MutableStateFlow(true)
+    val canLoadMore: StateFlow<Boolean> = _canLoadMore.asStateFlow()
+
     init { load() }
 
     fun load() {
+        currentPage = 1
+        _canLoadMore.value = true
+        _isLoadingMore.value = false
         _feedState.value = FeedUiState.Loading
         viewModelScope.launch {
             runCatching {
                 val token = settings.githubToken.first().takeIf { it.isNotBlank() }
                 val stars = if (token != null) runCatching { repo.starredAndroidApps() }.getOrDefault(emptyList()) else emptyList()
-                val popular = runCatching { repo.popularAndroidApps(perPage = 20) }.getOrDefault(emptyList())
-                FeedUiState.Success(HomeFeed(stars = stars, popular = popular.shuffled()))
+                val page1 = runCatching { repo.popularAndroidApps(page = 1, perPage = 20) }.getOrDefault(emptyList()).shuffled()
+                _canLoadMore.value = page1.size >= 20 && maxPages > 1
+                FeedUiState.Success(HomeFeed(stars = stars, popular = page1))
             }.getOrElse { FeedUiState.Error(it.message ?: "加载失败") }.also { _feedState.value = it }
+        }
+    }
+
+    fun loadMore() {
+        if (_isLoadingMore.value || !_canLoadMore.value || currentPage >= maxPages) { _canLoadMore.value = currentPage >= maxPages; return }
+        _isLoadingMore.value = true
+        viewModelScope.launch {
+            val result = runCatching {
+                val next = repo.popularAndroidApps(page = currentPage + 1, perPage = 20).shuffled()
+                currentPage += 1
+                if (next.size < 20 || currentPage >= maxPages) _canLoadMore.value = false
+                val cur = (_feedState.value as? FeedUiState.Success)?.feed ?: HomeFeed(emptyList(), emptyList())
+                cur.copy(popular = cur.popular + next)
+            }
+            if (result.isSuccess) {
+                _feedState.value = FeedUiState.Success(result.getOrThrow())
+            } else {
+                _canLoadMore.value = false
+            }
+            _isLoadingMore.value = false
         }
     }
 

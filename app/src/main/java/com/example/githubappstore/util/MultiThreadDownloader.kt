@@ -2,7 +2,6 @@ package com.example.githubappstore.util
 
 import android.content.Context
 import android.net.Uri
-import android.os.Environment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -28,10 +27,9 @@ import kotlin.math.ceil
 class MultiThreadDownloader(private val context: Context, private val threadCount: Int = 4) {
     private val client: OkHttpClient = OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
 
-    fun download(url: String, fileName: String): Flow<DownloadEvent> = callbackFlow {
-        val destDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: run { trySend(DownloadEvent.Failed(fileName, "No external files dir")); close(); return@callbackFlow }
-        destDir.mkdirs(); val finalFile = File(destDir, fileName)
-        trySend(DownloadEvent.Queued(fileName))
+    fun download(url: String, destFile: File): Flow<DownloadEvent> = callbackFlow {
+        destFile.parentFile?.mkdirs(); val finalFile = destFile
+        trySend(DownloadEvent.Queued(finalFile.name))
         val totalSize = probeSize(url)
         if (totalSize <= 0) { downloadSingle(this, url, finalFile, fileName); close(); return@callbackFlow }
         val n = threadCount.coerceIn(2, 8)

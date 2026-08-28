@@ -24,8 +24,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.githubappstore.GitHubAppStoreApp
 import com.example.githubappstore.data.model.GhRelease
@@ -38,7 +40,7 @@ import com.example.githubappstore.ui.account.AccountViewModel
 /** "我的（GitHub 账户）" section, embedded as a child of Settings. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountSection(modifier: Modifier = Modifier, vm: AccountViewModel = viewModel(), dlVm: DownloadViewModel = viewModel()) {
+fun AccountSection(modifier: Modifier = Modifier, vm: AccountViewModel = viewModel(), dlVm: DownloadViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)) {
     val token by vm.token.collectAsState(); val user by vm.user.collectAsState(); val starsState by vm.starsState.collectAsState()
     var draft by remember { mutableStateOf(token) }
     var activeApp by remember { mutableStateOf<com.example.githubappstore.domain.AppItem?>(null) }

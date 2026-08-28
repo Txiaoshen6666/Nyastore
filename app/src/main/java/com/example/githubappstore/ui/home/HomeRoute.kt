@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -34,10 +37,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.Manifest
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.net.toUri
 import com.example.githubappstore.GitHubAppStoreApp
 import com.example.githubappstore.data.model.GhRelease
+import com.example.githubappstore.data.model.GhAsset
 import com.example.githubappstore.domain.AppCategory
 import com.example.githubappstore.domain.AppItem
 import com.example.githubappstore.ui.components.AppCard
@@ -46,6 +58,7 @@ import com.example.githubappstore.ui.components.StaggeredLazyColumn
 import com.example.githubappstore.ui.components.StaggerItem
 import com.example.githubappstore.ui.components.InstallBottomSheet
 import com.example.githubappstore.ui.downloads.DownloadViewModel
+import com.example.githubappstore.ui.downloads.hasStorageAccess
 import kotlinx.coroutines.delay
 
 /**
@@ -55,18 +68,51 @@ import kotlinx.coroutines.delay
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = viewModel()) {
+fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)) {
     val feedState by homeVm.feedState.collectAsState()
     val searchState by homeVm.searchState.collectAsState()
+    val isLoadingMore by homeVm.isLoadingMore.collectAsState()
+    val canLoadMore by homeVm.canLoadMore.collectAsState()
+    val listState = rememberLazyListState()
     var selected by remember { mutableStateOf(AppCategory.All) }
     var query by remember { mutableStateOf("") }
     var searchActive by remember { mutableStateOf(false) }
     var activeApp by remember { mutableStateOf<AppItem?>(null) }
     var release by remember { mutableStateOf<GhRelease?>(null) }
+    var releaseError by remember { mutableStateOf<String?>(null) }
+    var pendingAsset by remember { mutableStateOf<GhAsset?>(null) }
     val context = LocalContext.current
 
+    val writeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        pendingAsset?.let { asset ->
+            if (!granted) Toast.makeText(context, "未授权存储权限，将下载到应用私有目录", Toast.LENGTH_SHORT).show()
+            dlVm.enqueue(asset)
+            activeApp = null
+        }
+        pendingAsset = null
+    }
+    val manageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        pendingAsset?.let { asset -> dlVm.enqueue(asset); activeApp = null; pendingAsset = null }
+    }
+    fun requestStorageThenDownload(asset: GhAsset) {
+        if (hasStorageAccess(context)) { dlVm.enqueue(asset); activeApp = null; return }
+        pendingAsset = asset
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            manageLauncher.launch(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply { data = "package:${context.packageName}".toUri() })
+        } else {
+            writeLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+    }
+
     LaunchedEffect(query, selected) { if (query.trim().length >= 2) { delay(300); homeVm.search(selected, query) } else homeVm.search(selected, "") }
-    LaunchedEffect(activeApp) { activeApp?.let { app -> release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } ?: run { release = null } }
+    LaunchedEffect(activeApp) {
+        release = null; releaseError = null
+        activeApp?.let { app ->
+            runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }
+                .onSuccess { release = it; releaseError = null }
+                .onFailure { releaseError = it.message ?: "获取发布信息失败" }
+        } ?: run { release = null }
+    }
 
     val refreshState = rememberPullToRefreshState()
     var refreshing by remember { mutableStateOf(false) }
@@ -76,6 +122,15 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
         }
     }
     val isSearching = query.trim().length >= 2 && searchState !is HomeViewModel.SearchUiState.Idle
+
+    LaunchedEffect(listState, feedState, isLoadingMore, canLoadMore, isSearching) {
+        if (isSearching || !canLoadMore || isLoadingMore) return@LaunchedEffect
+        val layoutInfo = listState.layoutInfo
+        val total = layoutInfo.totalItemsCount
+        if (total == 0) return@LaunchedEffect
+        val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+        if (lastVisible >= total - 4) homeVm.loadMore()
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -106,7 +161,7 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
                 is HomeViewModel.SearchUiState.Loading -> LoadingPraying()
                 is HomeViewModel.SearchUiState.Empty -> Text("没有找到相关应用", modifier = Modifier.padding(16.dp))
                 is HomeViewModel.SearchUiState.Error -> Text(s.message, modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
-                is HomeViewModel.SearchUiState.Success -> StaggeredLazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
+                is HomeViewModel.SearchUiState.Success -> StaggeredLazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
                     item { Text("搜索结果", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp)) }
                     items(s.items, key = { it.repo.id }) { app -> StaggerItem { AppCard(app = app, onClick = { activeApp = app }) } }
                 }
@@ -114,14 +169,15 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
             } else when (val hs = feedState) {
                 is HomeViewModel.FeedUiState.Loading -> LoadingPraying()
                 is HomeViewModel.FeedUiState.Error -> Text(hs.message, modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
-                is HomeViewModel.FeedUiState.Success -> { val feed = hs.feed; StaggeredLazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
+                is HomeViewModel.FeedUiState.Success -> { val feed = hs.feed; StaggeredLazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
                     if (feed.stars.isNotEmpty()) { item { Text("我 Star 的", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)) }; items(feed.stars, key = { "star-${it.repo.id}" }) { app -> StaggerItem { AppCard(app = app, onClick = { activeApp = app }) } } }
                     item { Text("热门推荐", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = if (feed.stars.isNotEmpty()) 12.dp else 4.dp, bottom = 4.dp)) }
                     if (feed.popular.isEmpty()) item { Text("暂无推荐数据", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     else items(feed.popular, key = { "pop-${it.repo.id}" }) { app -> StaggerItem { AppCard(app = app, onClick = { activeApp = app }) } }
+                    if (isLoadingMore) item { CircularProgressIndicator(modifier = Modifier.fillMaxWidth().padding(16.dp)) }
                 } }
             }
         }
-        if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, onDismiss = { activeApp = null }, onDownload = { asset -> Toast.makeText(context, "开始下载: ${asset.name}", Toast.LENGTH_SHORT).show(); dlVm.enqueue(asset); activeApp = null }, onOpenRepo = { activeApp = null })
+        if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, releaseError = releaseError, onDismiss = { activeApp = null }, onDownload = { asset -> Toast.makeText(context, "开始下载: ${asset.name}", Toast.LENGTH_SHORT).show(); requestStorageThenDownload(asset) }, onOpenRepo = { activeApp = null }, onRetryRelease = { activeApp?.let { app -> releaseError = null; release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } })
     }
 }
