@@ -45,14 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import android.Manifest
-import android.content.Intent
-import android.os.Build
-import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.net.toUri
 import com.example.githubappstore.GitHubAppStoreApp
 import com.example.githubappstore.data.model.GhRelease
 import com.example.githubappstore.data.model.GhAsset
@@ -64,7 +57,6 @@ import com.example.githubappstore.ui.components.StaggeredLazyColumn
 import com.example.githubappstore.ui.components.StaggerItem
 import com.example.githubappstore.ui.components.InstallBottomSheet
 import com.example.githubappstore.ui.downloads.DownloadViewModel
-import com.example.githubappstore.ui.downloads.hasStorageAccess
 
 /**
  * Home route: recommendation feed (My Stars first + popular high-star) + search
@@ -87,30 +79,8 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
     var activeApp by remember { mutableStateOf<AppItem?>(null) }
     var release by remember { mutableStateOf<GhRelease?>(null) }
     var releaseError by remember { mutableStateOf<String?>(null) }
-    var pendingAsset by remember { mutableStateOf<GhAsset?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-
-    val writeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        pendingAsset?.let { asset ->
-            if (!granted) Toast.makeText(context, "未授权存储权限，将下载到应用私有目录", Toast.LENGTH_SHORT).show()
-            dlVm.enqueue(asset)
-            activeApp = null
-        }
-        pendingAsset = null
-    }
-    val manageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        pendingAsset?.let { asset -> dlVm.enqueue(asset); activeApp = null; pendingAsset = null }
-    }
-    fun requestStorageThenDownload(asset: GhAsset) {
-        if (hasStorageAccess(context)) { dlVm.enqueue(asset); activeApp = null; return }
-        pendingAsset = asset
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            manageLauncher.launch(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply { data = "package:${context.packageName}".toUri() })
-        } else {
-            writeLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        }
-    }
 
     fun submitSearch() {
         if (query.trim().length >= 2) homeVm.search(selected, query) else homeVm.search(selected, "")
@@ -196,6 +166,6 @@ fun HomeRoute(homeVm: HomeViewModel = viewModel(), dlVm: DownloadViewModel = vie
                 } }
             }
         }
-        if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, releaseError = releaseError, onDismiss = { activeApp = null }, onDownload = { asset -> Toast.makeText(context, "开始下载: ${asset.name}", Toast.LENGTH_SHORT).show(); requestStorageThenDownload(asset) }, onOpenRepo = { activeApp = null }, onRetryRelease = { activeApp?.let { app -> releaseError = null; scope.launch { release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } } })
+        if (activeApp != null) InstallBottomSheet(app = activeApp!!, release = release, releaseError = releaseError, onDismiss = { activeApp = null }, onDownload = { asset -> Toast.makeText(context, "开始下载: ${asset.name}", Toast.LENGTH_SHORT).show(); dlVm.enqueue(asset); activeApp = null }, onOpenRepo = { activeApp = null }, onRetryRelease = { activeApp?.let { app -> releaseError = null; scope.launch { release = runCatching { GitHubAppStoreApp.container.cachedRepository.latestRelease(app.repo.ownerLogin, app.repo.name) }.getOrNull() } } })
     }
 }
